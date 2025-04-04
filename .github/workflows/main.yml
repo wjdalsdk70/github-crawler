@@ -34,8 +34,8 @@ jobs:
       - name: SSH into EC2 and deploy container
         run: |
           ssh ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
-            docker stop fastapi-app || true
-            docker rm fastapi-app || true
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/fastapi-app:latest
-            docker run -d --name fastapi-app -p 80:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/fastapi-app:latest
+            docker stop github-crawler || true
+            docker rm github-crawler || true
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/github-crawler:latest
+            docker run -d --name github-crawler -p 8000:8000 ${{ secrets.DOCKER_HUB_USERNAME }}/github-crawler:latest
           EOF

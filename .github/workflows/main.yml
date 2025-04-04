@@ -20,8 +20,8 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/fastapi-app:latest .
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/fastapi-app:latest
+          docker build -t ${{ secrets.DOCKER_HUB_USERNAME }}/github-crawler:latest .
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/github-crawler:latest
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0

@@ -1,7 +1,10 @@
 from fastapi import FastAPI, HTTPException, Query, Header
 from typing import Optional
-from datetime import datetime
+from datetime import date, datetime, time, timedelta
 import requests
+from zoneinfo import ZoneInfo
+
+KST = ZoneInfo("Asia/Seoul")
 
 app = FastAPI()
 
@@ -26,9 +29,12 @@ async def get_commits_raw(
     if branch:
         params['sha'] = branch
     if since:
-        params['since'] = since
+        since_dt = datetime.combine(since, time.min, tzinfo=KST)
+        params['since'] = since_dt.isoformat()
+
     if until:
-        params['until'] = until
+        until_dt = datetime.combine(until, time.min, tzinfo=KST) + timedelta(days=1)
+        params['until'] = until_dt.isoformat()
 
     response = requests.get(f"https://api.github.com/repos/{owner}/{repo}/commits", headers=headers, params=params)
 
@@ -58,9 +64,11 @@ async def get_commits_with_diff(
     if branch:
         params['sha'] = branch
     if since:
-        params['since'] = since
+        since_dt = datetime.combine(since, time.min, tzinfo=KST)
+        params['since'] = since_dt.isoformat()
     if until:
-        params['until'] = until
+        until_dt = datetime.combine(until, time.min, tzinfo=KST) + timedelta(days=1)
+        params['until'] = until_dt.isoformat()
 
     # 전체 커밋 목록 요청
     commits_res = requests.get(f"https://api.github.com/repos/{owner}/{repo}/commits", headers=headers, params=params)
@@ -112,9 +120,11 @@ async def get_commit_messages_and_changes(
     if branch:
         params['sha'] = branch
     if since:
-        params['since'] = since.isoformat()
+        since_dt = datetime.combine(since, time.min, tzinfo=KST)
+        params['since'] = since_dt.isoformat()
     if until:
-        params['until'] = until.isoformat()
+        until_dt = datetime.combine(until, time.min, tzinfo=KST) + timedelta(days=1)
+        params['until'] = until_dt.isoformat()
 
     commits_res = requests.get(f"https://api.github.com/repos/{owner}/{repo}/commits", headers=headers, params=params)
 

@@ -1,12 +1,15 @@
-from fastapi import FastAPI, HTTPException, Query, Header
+from fastapi import FastAPI, HTTPException, Query, Header, Depends
 from typing import Optional
 from datetime import date, datetime, time, timedelta
 import requests
 from zoneinfo import ZoneInfo
+import httpx
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 KST = ZoneInfo("Asia/Seoul")
 
 app = FastAPI()
+security = HTTPBearer()
 
 @app.get("/get_commits")
 async def get_commits_raw(
@@ -158,6 +161,7 @@ async def get_commit_messages_and_changes(
                 })
 
         result.append({
+            "sha": sha,
             "message": message,
             "changes": patches
         })
@@ -286,4 +290,48 @@ async def get_repo_project_todo_items(
     return {
         "project_title": project_data.get("title"),
         "todo_items": todo_items
+    }
+
+@app.get("/orgs")
+async def get_orgs(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    access_token = credentials.credentials  # 실제 토큰 문자열
+    headers = {
+        "Authorization": f"token {access_token}",  # GitHub은 token prefix
+        "Accept": "application/vnd.github+json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get("https://api.github.com/user/orgs", headers=headers)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail=response.text)
+        return response.json()
+
+@app.get("/get_branches")
+async def get_branches(
+    owner: str = Query(..., description="레포 소유자 (유저 또는 조직 이름)"),
+    repo: str = Query(..., description="레포 이름"),
+    token: str = Header(...)
+):
+    """
+    해당 GitHub 레포지토리의 브랜치 목록을 반환하는 API
+    """
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+    url = f"https://api.github.com/repos/{owner}/{repo}/branches"
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.json())
+
+    branches_data = response.json()
+    branches = [{"name": b.get("name")} for b in branches_data]
+
+    return {
+        "repository": f"{owner}/{repo}",
+        "branch_count": len(branches),
+        "branches": branches
     }
